@@ -12,53 +12,8 @@ class Object3D:
         self.name = ""
         self.color = [122,122,122] #All objects default to gray
         self.translation = [0.0,0.0,0.0]
-        self.indicator = 0 #0 = not any object
         #Rotation defined once I figure out how to implement quaternions
-
-    def delete(self, list):
-        #Take list, remove object from list
-        list.deleteObject(self)
-        list.update()
-        
-    def editprompt(self,list):
-        #create edit plane
-        pass
-
-    def edit(self,list):
-        list.modifyObject(self)
-        list.update()
-
-    def rename(self,list):
-        pass
-
-    def updateTraslation(self, newTranslation):
-        self.translation = newTranslation
-
-    def updateRotation(self, newRotation):
-        self.rotation = newRotation
-    
-    def updateColor(self, newColor):
-        self.color = newColor
-
-class Cube(Object3D):
-    def __init__(self):
-        super().__init__()
-        self.scale = [1.0,1.0,1.0]
-        self.indicator = 1 #1 = cube
-        self.name = "cube" #will be changed in add to dict
-
-    def updateScale(self, newScale):
-        self.scale = newScale
-        
-    def editprompt(self,list):
-        #create cube edit plane
-
-        #Text fields: translation (x,y,z)
-        # rotation (x,y,z)
-        # color (r,g,b)
-        # scale (x,y,z)
-
-        #Create Field Items
+        self.indicator = 0 #0 = not any object
         
         self.translationFieldX = QLineEdit(str(self.translation[0]))
         self.translationFieldY = QLineEdit(str(self.translation[1]))
@@ -74,11 +29,74 @@ class Cube(Object3D):
         self.colorFieldG = QLineEdit(str(self.color[1]))
         self.colorFieldB = QLineEdit(str(self.color[2]))
         self.colorButton = QPushButton("Update Color")
+
+    def delete(self, list):
+        #Take list, remove object from list
+        list.deleteObject(self)
+        list.update()
+        
+    def editprompt(self,list):
+        #create edit plane
+        pass
+    
+
+    def rename(self,list):
+        pass
+
+    def updateTraslation(self):
+        self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
+
+    def updateRotation(self):
+        self.rotation = [float(self.rotationFieldX.text()),float(self.rotationFieldY.text()),float(self.rotationFieldZ.text())]
+    
+    def updateColor(self):
+        self.color = [int(self.colorFieldR.text()),int(self.colorFieldG.text()),int(self.colorFieldB.text())]
+
+class Cube(Object3D):
+    def __init__(self):
+        super().__init__()
+        self.scale = [1.0,1.0,1.0]
+        self.indicator = 1 #1 = cube
+        self.name = "cube" #will be changed in add to dict
+
+    def updateScale(self):
+        self.scale = [float(self.scaleFieldX.text()),float(self.scaleFieldY.text()),float(self.scaleFieldZ.text())]
+        
+    def editprompt(self,list):
+        #create cube edit plane
+
+        #Text fields: translation (x,y,z)
+        # rotation (x,y,z)
+        # color (r,g,b)
+        # scale (x,y,z)
+
+        #Create Field Items
+        
+        self.translationFieldX = QLineEdit(str(self.translation[0]))
+        self.translationFieldY = QLineEdit(str(self.translation[1]))
+        self.translationFieldZ = QLineEdit(str(self.translation[2]))
+        self.translationButton = QPushButton("Update Translation")
+        self.translationButton.clicked.connect(self.updateTraslation)
+        
+        self.rotationFieldX = QLineEdit(str(self.rotation[0]))
+        self.rotationFieldY = QLineEdit(str(self.rotation[1]))
+        self.rotationFieldZ = QLineEdit(str(self.rotation[2]))
+        self.rotationButton = QPushButton("Update Rotation")
+        self.translationButton.clicked.connect(self.updateRotation)
+        
+        self.colorFieldR = QLineEdit(str(self.color[0]))
+        self.colorFieldG = QLineEdit(str(self.color[1]))
+        self.colorFieldB = QLineEdit(str(self.color[2]))
+        self.colorButton = QPushButton("Update Color")
+        self.translationButton.clicked.connect(self.updateColor)
         
         self.scaleFieldX = QLineEdit(str(self.scale[0]))
         self.scaleFieldY = QLineEdit(str(self.scale[1]))
         self.scaleFieldZ = QLineEdit(str(self.scale[2]))
         self.scaleButton = QPushButton("Update Scale")
+        self.translationButton.clicked.connect(self.updateScale)
+
+
 
 class Sphere(Object3D):
     
