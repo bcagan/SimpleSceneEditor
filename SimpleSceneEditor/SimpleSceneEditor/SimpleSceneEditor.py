@@ -93,6 +93,11 @@ class Object3D:
     
     def updateColor(self):
         self.color = [int(self.colorFieldR.text()),int(self.colorFieldG.text()),int(self.colorFieldB.text())]
+        for i in range(3): #Lock into RGB range
+            if self.color[i] < 0:
+                self.color[i] = 0
+            elif self.color[i] > 255:
+                self.color[i] = 255
 
 class Cube(Object3D):
     def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None):
@@ -105,21 +110,20 @@ class Cube(Object3D):
     def updateScale(self):
         self.scale = [float(self.scaleFieldX.text()),float(self.scaleFieldY.text()),float(self.scaleFieldZ.text())]
         
-    def editprompt(self,list):
+    def editprompt(self):
         #create cube edit plane
 
         #Create Field Items
-
-        updateLambda = lambda:list.modifyObject(self)
-        def callUpdateLambda():
-            updateLambda()
+        
+        def callUpdateFunc():
+            self.objList.modifyObject(self)
         
         self.translationFieldX = QLineEdit(str(self.translation[0]))
         self.translationFieldY = QLineEdit(str(self.translation[1]))
         self.translationFieldZ = QLineEdit(str(self.translation[2]))
         self.translationButton = QPushButton("Update Translation")
         self.translationButton.clicked.connect(self.updateTraslation)
-        self.translationButton.clicked.connect(callUpdateLambda)
+        self.translationButton.clicked.connect(callUpdateFunc)
         
         quaternionEuler = self.rotation.toEulerAngles()
         self.rotationFieldX = QLineEdit(str(quaternionEuler.x()))
@@ -127,21 +131,21 @@ class Cube(Object3D):
         self.rotationFieldZ = QLineEdit(str(quaternionEuler.z()))
         self.rotationButton = QPushButton("Update Rotation")
         self.rotationButton.clicked.connect(self.updateRotation)
-        self.rotationButton.clicked.connect(callUpdateLambda)
+        self.rotationButton.clicked.connect(callUpdateFunc)
         
         self.colorFieldR = QLineEdit(str(self.color[0]))
         self.colorFieldG = QLineEdit(str(self.color[1]))
         self.colorFieldB = QLineEdit(str(self.color[2]))
         self.colorButton = QPushButton("Update Color")
         self.colorButton.clicked.connect(self.updateColor)
-        self.colorButton.clicked.connect(callUpdateLambda)
+        self.colorButton.clicked.connect(callUpdateFunc)
         
         self.scaleFieldX = QLineEdit(str(self.scale[0]))
         self.scaleFieldY = QLineEdit(str(self.scale[1]))
         self.scaleFieldZ = QLineEdit(str(self.scale[2]))
         self.scaleButton = QPushButton("Update Scale")
         self.scaleButton.clicked.connect(self.updateScale)
-        self.scaleButton.clicked.connect(callUpdateLambda)
+        self.scaleButton.clicked.connect(callUpdateFunc)
 
         #Create action pane
         self.actionPane = QVBoxLayout()
@@ -204,6 +208,98 @@ class Sphere(Object3D):
         self.indicator = 2 #2 = sphere
         self.name = "sphere" #will be changed in add to dict
 
+    def updateRadius(self):
+        self.radius = float(self.radiusField.text())
+        if self.radius <= 0.0:
+            self.radius = 0.000000001
+           
+
+
+    #Shares a lot of code with cube, could be generalized
+    def editprompt(self):
+        #create sphere edit plane
+
+        #Create Field Items
+        
+        def callUpdateFunc():
+            self.objList.modifyObject(self)
+        
+        self.translationFieldX = QLineEdit(str(self.translation[0]))
+        self.translationFieldY = QLineEdit(str(self.translation[1]))
+        self.translationFieldZ = QLineEdit(str(self.translation[2]))
+        self.translationButton = QPushButton("Update Translation")
+        self.translationButton.clicked.connect(self.updateTraslation)
+        self.translationButton.clicked.connect(callUpdateFunc)
+        
+        quaternionEuler = self.rotation.toEulerAngles()
+        self.rotationFieldX = QLineEdit(str(quaternionEuler.x()))
+        self.rotationFieldY = QLineEdit(str(quaternionEuler.y()))
+        self.rotationFieldZ = QLineEdit(str(quaternionEuler.z()))
+        self.rotationButton = QPushButton("Update Rotation")
+        self.rotationButton.clicked.connect(self.updateRotation)
+        self.rotationButton.clicked.connect(callUpdateFunc)
+        
+        self.colorFieldR = QLineEdit(str(self.color[0]))
+        self.colorFieldG = QLineEdit(str(self.color[1]))
+        self.colorFieldB = QLineEdit(str(self.color[2]))
+        self.colorButton = QPushButton("Update Color")
+        self.colorButton.clicked.connect(self.updateColor)
+        self.colorButton.clicked.connect(callUpdateFunc)
+        
+        self.radiusField = QLineEdit(str(self.radius))
+        self.radiusButton = QPushButton("Update Radius")
+        self.radiusButton.clicked.connect(self.updateRadius)
+        self.radiusButton.clicked.connect(callUpdateFunc)
+
+        #Create action pane
+        self.actionPane = QVBoxLayout()
+        self.actionPane.addWidget(QtWidgets.QLabel("Action: Edit " + self.name, alignment=QtCore.Qt.AlignTop))
+
+        if self.revertPane is not None and self.swapActionPane is not None:
+
+            returnButton = QPushButton("Return to Add")
+            returnButton.clicked.connect(self.revertPane)
+
+            #Add buttons
+            horizontalGroupBoxT = QGroupBox(("Translation"))
+            hlayoutT = QHBoxLayout();
+            hlayoutT.addWidget(self.translationFieldX)
+            hlayoutT.addWidget(self.translationFieldY)
+            hlayoutT.addWidget(self.translationFieldZ)
+            hlayoutT.addWidget(self.translationButton)
+            horizontalGroupBoxT.setLayout(hlayoutT)
+            self.actionPane.addWidget(horizontalGroupBoxT)
+            
+            horizontalGroupBoxR = QGroupBox(("Rotation"))
+            hlayoutR = QHBoxLayout();
+            hlayoutR.addWidget(self.rotationFieldX)
+            hlayoutR.addWidget(self.rotationFieldY)
+            hlayoutR.addWidget(self.rotationFieldZ)
+            hlayoutR.addWidget(self.rotationButton)
+            horizontalGroupBoxR.setLayout(hlayoutR)
+            self.actionPane.addWidget(horizontalGroupBoxR)
+            
+            horizontalGroupBoxC = QGroupBox(("Color"))
+            hlayoutC = QHBoxLayout();
+            hlayoutC.addWidget(self.colorFieldR)
+            hlayoutC.addWidget(self.colorFieldG)
+            hlayoutC.addWidget(self.colorFieldB)
+            hlayoutC.addWidget(self.colorButton)
+            horizontalGroupBoxC.setLayout(hlayoutC)
+            self.actionPane.addWidget(horizontalGroupBoxC)
+            
+            horizontalGroupBoxR = QGroupBox(("Radius"))
+            hlayoutR = QHBoxLayout();
+            hlayoutR.addWidget(self.radiusField)
+            hlayoutR.addWidget(self.radiusButton)
+            horizontalGroupBoxR.setLayout(hlayoutR)
+            self.actionPane.addWidget(horizontalGroupBoxR)
+
+
+            self.actionPane.addWidget(returnButton)
+
+            #Set pane
+            self.swapActionPane(self.actionPane)
 
     
 
