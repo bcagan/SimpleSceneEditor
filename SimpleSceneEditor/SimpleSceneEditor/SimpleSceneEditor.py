@@ -109,13 +109,51 @@ class Sphere(Object3D):
         self.indicator = 2 #2 = sphere
         self.name = "sphere" #will be changed in add to dict
 
-class ObjectList():
+
+    
+
+class ListPane(QVBoxLayout):
 
     def __init__(self):
+        super().__init__()
+        self.text = QtWidgets.QLabel("List", alignment=QtCore.Qt.AlignTop)
+        self.addWidget(self.text)
+        self.table = QTableWidget()
+        self.table.setRowCount(1)
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Name", "Delete", "Edit"])
+
+    def updateListPane(self, updatedListDic = {}):
+        self.removeWidget(self.table)
+        self.table.deleteLater()
+        self.table = QTableWidget()
+        self.table.setRowCount(len(updatedListDic))
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Name", "Delete", "Edit"])
+        objCounter = 0
+        for objKey in updatedListDic:
+            obj = updatedListDic[objKey]
+            objName = obj.name
+            objDelete = QPushButton("Delete")
+            objEdit = QPushButton("Edit")
+            #Create obj delete button
+            #Create obj edit button
+            self.table.setItem(objCounter, 0, QTableWidgetItem(objName))
+            self.table.setItem(objCounter, 1, QTableWidgetItem())
+            self.table.setIndexWidget(self.table.model().index(objCounter, 1), objDelete)
+            self.table.setItem(objCounter, 2, QTableWidgetItem())
+            self.table.setIndexWidget(self.table.model().index(objCounter, 2), objEdit)
+            objCounter += 1
+        self.addWidget(self.table)
+        
+class ObjectList():
+
+    def __init__(self, listPane = None):
         self.objectDict = {}
         self.cubeNum = 0
         self.sphereNum = 0
-
+        self.listPane = listPane
+    
     def addObject(self, object):
         if object.indicator == 0:
             pass
@@ -128,11 +166,12 @@ class ObjectList():
             newName = "sphere" + str(self.sphereNum)
             self.sphereNum += 1
             object.name = newName
+            self.objectDict[object.name] = object
 
     def deleteObject(self, object):
         if object.indicator == 0:
             pass
-        self.objectDict.pop(object.name)
+        del self.objectDict[object.name]
 
 
     def modifyObject(self, object):
@@ -141,15 +180,8 @@ class ObjectList():
         self.objectDict[object.name]
 
     def update(self):
-        pass
-    
-
-class ListPane(QVBoxLayout):
-
-    def __init__(self):
-        super().__init__()
-        self.text = QtWidgets.QLabel("List", alignment=QtCore.Qt.AlignTop)
-        self.addWidget(self.text)
+        if(self.listPane is not None):
+            self.listPane.updateListPane(self.objectDict)
 
 class ActionPaneAdd(QVBoxLayout):
 
@@ -177,10 +209,10 @@ class ActionPaneAdd(QVBoxLayout):
 class MainWindow (QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.objList = ObjectList()
+        self.listPane = ListPane()
+        self.objList = ObjectList(self.listPane)
         self.addBackup = ActionPaneAdd(self.objList) #return to this to return to add pane
         self.actionPane = self.addBackup #default action is adding objects
-        self.listPane = ListPane()
 
 
         self.layout = QtWidgets.QVBoxLayout(self)
