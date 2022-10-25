@@ -1,8 +1,10 @@
 from ast import Delete
 from gettext import translation
+from lib2to3.pytree import Node
 from pickle import OBJ
 import sys
 import random
+from tkinter import CURRENT
 from PySide6 import QtCore, QtWidgets, QtGui, Qt3DCore, Qt3DInput, Qt3DAnimation, Qt3DExtras, Qt3DLogic, QtQuick3D
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import *
@@ -87,6 +89,7 @@ class Object3D:
 
     def delete(self):
         #Take list, remove object from list
+        self.renderWindow.view.removeObject(self.entity)
         self.objList.deleteObject(self)
         self.objList.update()
         
@@ -115,6 +118,7 @@ class Object3D:
             elif self.color[i] > 255:
                 self.color[i] = 255
         self.updateRender()
+        
 
 class Cube(Object3D):
     def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None, renderWindow = None):
@@ -126,18 +130,11 @@ class Cube(Object3D):
 
         
     def updateRender(self):
-        #Update mesh, transform etc.
-        self.transform = Qt3DCore.QTransform()
-        self.transform.setScale3D(QVector3D(self.scale[0],self.scale[1],self.scale[2]))
-        self.transform.setRotation(self.rotation)
-        self.transform.setTranslation(QVector3D(self.translation[0],self.translation[1],self.translation[2]))
-            
-        # Material
-        self.material = Qt3DExtras.QPhongMaterial()
-        self.material.setAmbient(QColor(self.color[0], self.color[1], self.color[2]))
-        self.material.setDiffuse(0)
-        self.material.setShininess(1)
-        self.material.setSpecular(0)
+        #sadly we have to delete the object and then add it again
+        self.renderWindow.view.removeObject(self.entity)
+        self.renderWindow.view.addObject(self)
+
+        
 
     def updateScale(self):
         self.scale = [float(self.scaleFieldX.text()),float(self.scaleFieldY.text()),float(self.scaleFieldZ.text())]
@@ -253,6 +250,8 @@ class Sphere(Object3D):
         self.material.setDiffuse(0)
         self.material.setShininess(1)
         self.material.setSpecular(0)
+
+
 
     def updateRadius(self):
         self.radius = float(self.radiusField.text())
@@ -486,8 +485,18 @@ class RenderWindow(Qt3DExtras.Qt3DWindow):
         else:
             self.addObjectSphere(object)
 
-#    def removeObject(self):
-      
+
+    def removeRecursive(self, objectID, currentNode : Qt3DCore.QNode):
+        if currentNode is not None:
+            if currentNode.id() == objectID:
+                currentNode.deleteLater()
+                pass
+            for node in currentNode.childNodes():
+                self.removeRecursive(objectID, node)
+
+    def removeObject(self, object : Qt3DCore.QEntity):
+        self.removeRecursive(object.id(),self.rootEntity)
+
      
 
 
