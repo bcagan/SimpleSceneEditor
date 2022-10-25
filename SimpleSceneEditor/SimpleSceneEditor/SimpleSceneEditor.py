@@ -1,3 +1,4 @@
+from ast import Delete
 from gettext import translation
 from pickle import OBJ
 import sys
@@ -46,7 +47,7 @@ class ObjectList():
             self.listPane.updateListPane(self.objectDict)
 
 class Object3D:
-    def __init__(self, objList = ObjectList()):
+    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None):
         self.name = ""
         self.color = [122,122,122] #All objects default to gray
         self.translation = [0.0,0.0,0.0]
@@ -70,6 +71,8 @@ class Object3D:
         self.colorButton = QPushButton("Update Color")
 
         self.objList = objList
+        self.swapActionPane = swapActionPane
+        self.revertPane = revertPane
 
     def delete(self):
         #Take list, remove object from list
@@ -92,11 +95,12 @@ class Object3D:
         self.color = [int(self.colorFieldR.text()),int(self.colorFieldG.text()),int(self.colorFieldB.text())]
 
 class Cube(Object3D):
-    def __init__(self, objList = ObjectList()):
-        super().__init__(objList)
+    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None):
+        super().__init__(objList, swapActionPane, revertPane)
         self.scale = [1.0,1.0,1.0]
         self.indicator = 1 #1 = cube
         self.name = "cube" #will be changed in add to dict
+        self.actionPane = QVBoxLayout()
 
     def updateScale(self):
         self.scale = [float(self.scaleFieldX.text()),float(self.scaleFieldY.text()),float(self.scaleFieldZ.text())]
@@ -117,9 +121,10 @@ class Cube(Object3D):
         self.translationButton.clicked.connect(self.updateTraslation)
         self.translationButton.clicked.connect(callUpdateLambda)
         
-        self.rotationFieldX = QLineEdit(str(self.rotation[0]))
-        self.rotationFieldY = QLineEdit(str(self.rotation[1]))
-        self.rotationFieldZ = QLineEdit(str(self.rotation[2]))
+        quaternionEuler = self.rotation.toEulerAngles()
+        self.rotationFieldX = QLineEdit(str(quaternionEuler.x()))
+        self.rotationFieldY = QLineEdit(str(quaternionEuler.y()))
+        self.rotationFieldZ = QLineEdit(str(quaternionEuler.z()))
         self.rotationButton = QPushButton("Update Rotation")
         self.rotationButton.clicked.connect(self.updateRotation)
         self.rotationButton.clicked.connect(callUpdateLambda)
@@ -138,11 +143,28 @@ class Cube(Object3D):
         self.scaleButton.clicked.connect(self.updateScale)
         self.scaleButton.clicked.connect(callUpdateLambda)
 
+        #Create action pane
+        self.actionPane = QVBoxLayout()
+        self.actionPane.addWidget(QtWidgets.QLabel("Action: Edit " + self.name, alignment=QtCore.Qt.AlignTop))
+
+        if self.revertPane is not None and self.swapActionPane is not None:
+
+            returnButton = QPushButton("Return to Add")
+            returnButton.clicked.connect(self.revertPane)
+
+            #Add buttons
+
+
+            self.actionPane.addWidget(returnButton)
+
+            #Set pane
+            self.swapActionPane(self.actionPane)
+
 
 class Sphere(Object3D):
     
-    def __init__(self, objList = ObjectList()):
-        super().__init__(objList)
+    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None):
+        super().__init__(objList, swapActionPane, revertPane)
         self.radius = 1.0
         self.indicator = 2 #2 = sphere
         self.name = "sphere" #will be changed in add to dict
@@ -175,6 +197,7 @@ class ListPane(QVBoxLayout):
             objDelete = QPushButton("Delete")
             objDelete.clicked.connect(obj.delete)
             objEdit = QPushButton("Edit")
+            objEdit.clicked.connect(obj.editprompt)
             #Create obj delete button
             #Create obj edit button
             self.table.setItem(objCounter, 0, QTableWidgetItem(objName))
@@ -187,7 +210,7 @@ class ListPane(QVBoxLayout):
 
 class ActionPaneAdd(QVBoxLayout):
 
-    def __init__(self,objList = ObjectList(), text = None):
+    def __init__(self,objList = ObjectList(), text = None, swapActionPane = None, revertPane = None):
         super().__init__()
         if text is not None:
             self.addWidget(text)
@@ -198,33 +221,63 @@ class ActionPaneAdd(QVBoxLayout):
         self.addSphereButton.clicked.connect(self.addSphereCall)
         self.addWidget(self.addCubeButton)
         self.addWidget(self.addSphereButton)
+        self.swapActionPane = swapActionPane
+        self.revertPane = revertPane
     
     def addCubeCall(self):
-        cube = Cube(self.objList)
+        cube = Cube(self.objList, self.swapActionPane, self.revertPane)
         self.objList.addObject(cube)
         self.objList.update()
 
     def addSphereCall(self):
-        sphere = Sphere(self.objList)
+        sphere = Sphere(self.objList, self.swapActionPane, self.revertPane)
         self.objList.addObject(sphere)
         self.objList.update()
+        
 
-class MainWindow (QtWidgets.QWidget):
+class MainWindow (QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.listPane = ListPane()
         self.objList = ObjectList(self.listPane)
         addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
-        self.addBackup = ActionPaneAdd(self.objList, addBackupText) #return to this to return to add pane
 
-        self.actionPane = self.addBackup #default action is adding objects
+        #self.layout = QtWidgets.QVBoxLayout(self)
+
+        self.centralWidget = QtWidgets.QWidget(self)
+        self.setCentralWidget(self.centralWidget)
+        layout = QtWidgets.QVBoxLayout()
+        self.centralWidget.setLayout(layout)
+
+        self.llayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane) #return to this to return to add pane
+        self.rlayout = self.listPane
+        self.centralWidget.layout().addLayout(self.llayout,25)
+        self.centralWidget.layout().addLayout(self.rlayout,75)
 
 
-        self.layout = QtWidgets.QVBoxLayout(self)
-        llayout = self.actionPane
-        rlayout = self.listPane
-        self.layout.addLayout(llayout,25)
-        self.layout.addLayout(rlayout,75)
+    def swapActionPane(self, newPane):
+        self.centralWidget = QtWidgets.QWidget(self)
+        self.setCentralWidget(self.centralWidget)
+        layout = QtWidgets.QVBoxLayout()
+        self.centralWidget.setLayout(layout)
+        self.llayout.setParent(None)
+        self.llayout = newPane
+        self.rlayout.setParent(None)
+        self.centralWidget.layout().addLayout(self.llayout,25)
+        self.centralWidget.layout().addLayout(self.rlayout,75)
+
+    def revertPane(self):
+        addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
+        self.centralWidget = QtWidgets.QWidget(self)
+        self.setCentralWidget(self.centralWidget)
+        layout = QtWidgets.QVBoxLayout()
+        self.centralWidget.setLayout(layout)
+
+        self.llayout.setParent(None)
+        self.llayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane) 
+        self.rlayout.setParent(None)
+        self.centralWidget.layout().addLayout(self.llayout,25)
+        self.centralWidget.layout().addLayout(self.rlayout,75)
         
 
     
