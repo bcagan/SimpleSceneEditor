@@ -3,11 +3,16 @@ from gettext import translation
 from pickle import OBJ
 import sys
 import random
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui, Qt3DCore, Qt3DInput, Qt3DAnimation, Qt3DExtras, Qt3DLogic, QtQuick3D
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
+from PySide6.Qt3DCore import *
+from PySide6.Qt3DExtras import *
+from PySide6.Qt3DLogic import *
+from PySide6.Qt3DInput import *
 
+#https://doc.qt.io/qtforpython/ Was used as documentation
         
 class ObjectList():
 
@@ -364,7 +369,16 @@ class ActionPaneAdd(QVBoxLayout):
         sphere = Sphere(self.objList, self.swapActionPane, self.revertPane)
         self.objList.addObject(sphere)
         self.objList.update()
-        
+
+#Layout which contains a widget acting as a container
+#for a Qt3DWindow, the render view
+class RenderPane (QVBoxLayout):
+    def __init__(self,objList = ObjectList(), text = None):
+        super().__init__()
+        if text is not None:
+            self.addWidget(text)
+        self.view = Qt3DExtras.Qt3DWindow()
+        self.container = QWidget.createWindowContainer(self.view)
 
 class MainWindow (QtWidgets.QMainWindow):
     def __init__(self):
@@ -379,11 +393,14 @@ class MainWindow (QtWidgets.QMainWindow):
         self.setCentralWidget(self.centralWidget)
         layout = QtWidgets.QVBoxLayout()
         self.centralWidget.setLayout(layout)
+        self.renderPane = RenderPane(self.objList, QtWidgets.QLabel("Render View", alignment=QtCore.Qt.AlignTop))
 
-        self.llayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane) #return to this to return to add pane
-        self.rlayout = self.listPane
-        self.centralWidget.layout().addLayout(self.llayout,25)
-        self.centralWidget.layout().addLayout(self.rlayout,75)
+        self.toplayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane) #return to this to return to add pane
+        self.midlayout = self.listPane
+        self.bottomlayout = self.renderPane
+        self.centralWidget.layout().addLayout(self.toplayout,25)
+        self.centralWidget.layout().addLayout(self.midlayout,25)
+        self.centralWidget.layout().addLayout(self.bottomlayout,50)
 
 
     def swapActionPane(self, newPane):
@@ -391,11 +408,13 @@ class MainWindow (QtWidgets.QMainWindow):
         self.setCentralWidget(self.centralWidget)
         layout = QtWidgets.QVBoxLayout()
         self.centralWidget.setLayout(layout)
-        self.llayout.setParent(None)
-        self.llayout = newPane
-        self.rlayout.setParent(None)
-        self.centralWidget.layout().addLayout(self.llayout,25)
-        self.centralWidget.layout().addLayout(self.rlayout,75)
+        self.toplayout.setParent(None)
+        self.toplayout = newPane
+        self.midlayout.setParent(None)
+        self.bottomlayout.setParent(None)
+        self.centralWidget.layout().addLayout(self.toplayout,25)
+        self.centralWidget.layout().addLayout(self.midlayout,25)
+        self.centralWidget.layout().addLayout(self.bottomlayout,50)
 
     def revertPane(self):
         addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
@@ -404,11 +423,13 @@ class MainWindow (QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout()
         self.centralWidget.setLayout(layout)
 
-        self.llayout.setParent(None)
-        self.llayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane) 
-        self.rlayout.setParent(None)
-        self.centralWidget.layout().addLayout(self.llayout,25)
-        self.centralWidget.layout().addLayout(self.rlayout,75)
+        self.toplayout.setParent(None)
+        self.toplayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane) 
+        self.midlayout.setParent(None)
+        self.bottomlayout.setParent(None)
+        self.centralWidget.layout().addLayout(self.toplayout,25)
+        self.centralWidget.layout().addLayout(self.midlayout,25)
+        self.centralWidget.layout().addLayout(self.bottomlayout,50)
         
 
     
@@ -417,7 +438,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
     widget = MainWindow()
-    widget.resize(800,600)
+    widget.resize(1200,900)
     widget.show()
 
     sys.exit(app.exec())
