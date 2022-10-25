@@ -5,6 +5,7 @@ import random
 from PySide6 import QtCore, QtWidgets, QtGui
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import *
+from PySide6.QtGui import *
 
 
 
@@ -13,7 +14,7 @@ class Object3D:
         self.name = ""
         self.color = [122,122,122] #All objects default to gray
         self.translation = [0.0,0.0,0.0]
-        #Rotation defined once I figure out how to implement quaternions
+        self.rotation = QQuaternion()
         self.indicator = 0 #0 = not any object
         
         self.translationFieldX = QLineEdit(str(self.translation[0]))
@@ -21,9 +22,10 @@ class Object3D:
         self.translationFieldZ = QLineEdit(str(self.translation[2]))
         self.translationButton = QPushButton("Update Translation")
         
-        self.rotationFieldX = QLineEdit(str(self.rotation[0]))
-        self.rotationFieldY = QLineEdit(str(self.rotation[1]))
-        self.rotationFieldZ = QLineEdit(str(self.rotation[2]))
+        quaternionEuler = self.rotation.toEulerAngles()
+        self.rotationFieldX = QLineEdit(str(quaternionEuler.x()))
+        self.rotationFieldY = QLineEdit(str(quaternionEuler.y()))
+        self.rotationFieldZ = QLineEdit(str(quaternionEuler.z()))
         self.rotationButton = QPushButton("Update Rotation")
         
         self.colorFieldR = QLineEdit(str(self.color[0]))
@@ -43,8 +45,10 @@ class Object3D:
     def updateTraslation(self):
         self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
 
+    #Construct quaternion from inputted rotation
     def updateRotation(self):
-        self.rotation = [float(self.rotationFieldX.text()),float(self.rotationFieldY.text()),float(self.rotationFieldZ.text())]
+        self.rotation = QQuaternion.fromEulerAngles(QVector3D(float(self.rotationFieldX.text()),float(self.rotationFieldY.text()),float(self.rotationFieldZ.text())))
+        
     
     def updateColor(self):
         self.color = [int(self.colorFieldR.text()),int(self.colorFieldG.text()),int(self.colorFieldB.text())]
@@ -139,7 +143,26 @@ class ObjectList():
     def update(self):
         pass
     
+
+class ListPane(QVBoxLayout):
+
+    def __init__(self):
+        super().__init__()
+        self.text = QtWidgets.QLabel("List", alignment=QtCore.Qt.AlignTop)
+        self.addWidget(self.text)
+
 class ActionPaneAdd(QVBoxLayout):
+
+    def __init__(self,objList = ObjectList()):
+        super().__init__()
+        self.objList = objList
+        self.addCubeButton = QPushButton("Cube")
+        self.addSphereButton = QPushButton("Sphere")
+        self.addCubeButton.clicked.connect(self.addCubeCall)
+        self.addSphereButton.clicked.connect(self.addSphereCall)
+        self.addWidget(self.addCubeButton)
+        self.addWidget(self.addSphereButton)
+        self.setContentsMargins(1,1,1,1) 
     
     def addCubeCall(self):
         cube = Cube()
@@ -151,30 +174,18 @@ class ActionPaneAdd(QVBoxLayout):
         self.objList.addObject(sphere)
         self.objList.update()
 
-    def __init__(self,objList = ObjectList()):
-        self.objList = objList
-        self.addCubeButton = QPushButton("Cube")
-        self.addSphereButton = QPushButton("Sphere")
-        self.addCubeButton.clicked.connnect(self.addCubeCall)
-        self.addSphereButton.clicked.connnect(self.addSphereButton)
-        self.addWidget(self.addCubeButton)
-        self.addWidget(self.addSphereButton)
-        self.setContentsMargins(1,1,1,1) 
-
 class MainWindow (QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.addBackup = ActionPaneAdd(self, list) #return to this to return to add pane
+        self.objList = ObjectList()
+        self.addBackup = ActionPaneAdd(self.objList) #return to this to return to add pane
         self.actionPane = self.addBackup #default action is adding objects
-        self.listPane = ListPane(self)
+        self.listPane = ListPane()
 
-        self.list = ObjectList()
 
         self.layout = QtWidgets.QVBoxLayout(self)
         llayout = self.actionPane
-        rlayout = QVBoxLayout()
-        rlayout.setContentsMargins(1,1,1,1)
-        rlayout.addWidget(self.listPane)
+        rlayout = self.listPane
         self.layout.addLayout(llayout,50)
         self.layout.addLayout(rlayout,50)
         
