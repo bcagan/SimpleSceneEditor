@@ -98,8 +98,9 @@ class Object3D:
         pass
 
     def updateRender(self):
-        #Update mesh, transform etc.
-        pass
+        #sadly we have to delete the object and then add it again
+        self.renderWindow.view.removeObject(self.entity)
+        self.renderWindow.view.addObject(self)
 
     def updateTraslation(self):
         self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
@@ -129,10 +130,7 @@ class Cube(Object3D):
         self.actionPane = QVBoxLayout()
 
         
-    def updateRender(self):
-        #sadly we have to delete the object and then add it again
-        self.renderWindow.view.removeObject(self.entity)
-        self.renderWindow.view.addObject(self)
+    
 
         
 
@@ -447,9 +445,6 @@ class RenderWindow(Qt3DExtras.Qt3DWindow):
         # Material
         object.material = Qt3DExtras.QPhongMaterial()
         object.material.setAmbient(QColor(object.color[0], object.color[1], object.color[2]))
-        object.material.setDiffuse(0)
-        object.material.setShininess(1)
-        object.material.setSpecular(0)
 
         #Linking
         object.entity.addComponent(object.mesh)
@@ -467,9 +462,6 @@ class RenderWindow(Qt3DExtras.Qt3DWindow):
         # Material
         object.material = Qt3DExtras.QPhongMaterial()
         object.material.setAmbient(QColor(object.color[0], object.color[1], object.color[2]))
-        object.material.setDiffuse(0)
-        object.material.setShininess(1)
-        object.material.setSpecular(0)
 
         #Linking
         object.entity.addComponent(object.mesh)
