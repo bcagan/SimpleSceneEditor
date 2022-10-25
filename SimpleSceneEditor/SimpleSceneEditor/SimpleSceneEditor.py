@@ -52,7 +52,7 @@ class ObjectList():
             self.listPane.updateListPane(self.objectDict)
 
 class Object3D:
-    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None):
+    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None, renderWindow = None):
         self.name = ""
         self.color = [122,122,122] #All objects default to gray
         self.translation = [0.0,0.0,0.0]
@@ -78,6 +78,12 @@ class Object3D:
         self.objList = objList
         self.swapActionPane = swapActionPane
         self.revertPane = revertPane
+        self.renderWindow = renderWindow
+
+        self.entity = None #mesh entity
+        self.mesh = None #mesh
+        self.transform = None #mesh transform
+        self.material = None #mesh material
 
     def delete(self):
         #Take list, remove object from list
@@ -105,8 +111,8 @@ class Object3D:
                 self.color[i] = 255
 
 class Cube(Object3D):
-    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None):
-        super().__init__(objList, swapActionPane, revertPane)
+    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None, renderWindow = None):
+        super().__init__(objList, swapActionPane, revertPane, renderWindow)
         self.scale = [1.0,1.0,1.0]
         self.indicator = 1 #1 = cube
         self.name = "cube" #will be changed in add to dict
@@ -207,8 +213,8 @@ class Cube(Object3D):
 
 class Sphere(Object3D):
     
-    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None):
-        super().__init__(objList, swapActionPane, revertPane)
+    def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None, renderWindow = None):
+        super().__init__(objList, swapActionPane, revertPane, renderWindow)
         self.radius = 1.0
         self.indicator = 2 #2 = sphere
         self.name = "sphere" #will be changed in add to dict
@@ -346,7 +352,7 @@ class ListPane(QVBoxLayout):
 
 class ActionPaneAdd(QVBoxLayout):
 
-    def __init__(self,objList = ObjectList(), text = None, swapActionPane = None, revertPane = None):
+    def __init__(self,objList = ObjectList(), text = None, swapActionPane = None, revertPane = None, renderPane = None):
         super().__init__()
         if text is not None:
             self.addWidget(text)
@@ -359,32 +365,115 @@ class ActionPaneAdd(QVBoxLayout):
         self.addWidget(self.addSphereButton)
         self.swapActionPane = swapActionPane
         self.revertPane = revertPane
+        self.renderPane = renderPane
     
     def addCubeCall(self):
-        cube = Cube(self.objList, self.swapActionPane, self.revertPane)
+        cube = Cube(self.objList, self.swapActionPane, self.revertPane, self.renderPane)
         self.objList.addObject(cube)
         self.objList.update()
+        self.renderPane.view.addObject(cube)
+        
 
     def addSphereCall(self):
-        sphere = Sphere(self.objList, self.swapActionPane, self.revertPane)
+        sphere = Sphere(self.objList, self.swapActionPane, self.revertPane, self.renderPane)
         self.objList.addObject(sphere)
         self.objList.update()
+        self.renderPane.view.addObject(sphere)
+
+#Based on https://doc.qt.io/qtforpython/examples/example_3d__simple3d.html
+class RenderWindow(Qt3DExtras.Qt3DWindow):
+    def __init__(self):
+        super().__init__()
+        # Root entity
+        self.rootEntity = Qt3DCore.QEntity()
+
+        # Camera
+        self.camera().lens().setPerspectiveProjection(45, 16 / 9, 0.1, 1000)
+        self.camera().setPosition(QVector3D(0, 0, 40))
+        self.camera().setViewCenter(QVector3D(0, 0, 0))
+
+        # For camera controls
+
+        self.camController = Qt3DExtras.QOrbitCameraController(self.rootEntity)
+        self.camController.setLinearSpeed(50)
+        self.camController.setLookSpeed(180)
+        self.camController.setCamera(self.camera())
+
+        self.setRootEntity(self.rootEntity)
+
+    def addObjectCube(self, object: Cube):
+        #mesh, transform
+        object.mesh = Qt3DExtras.QCuboidMesh()
+        object.transform = Qt3DCore.QTransform()
+        object.transform.setScale3D(QVector3D(object.scale[0],object.scale[1],object.scale[2]))
+        object.transform.setRotation(object.rotation)
+        object.transform.setTranslation(QVector3D(object.translation[0],object.translation[1],object.translation[2]))
+            
+        # Material
+        object.material = Qt3DExtras.QPhongMaterial()
+        object.material.setAmbient(QColor(object.color[0], object.color[1], object.color[2]))
+        object.material.setDiffuse(0)
+        object.material.setShininess(1)
+        object.material.setSpecular(0)
+
+        #Linking
+        object.entity.addComponent(object.mesh)
+        object.entity.addComponent(object.transform)
+        object.entity.addComponent(object.material)
+
+    def addObjectSphere(self, object: Sphere):
+        #Mesh, radius, and transform
+        object.mesh = Qt3DExtras.QSphereMesh()
+        object.mesh.setRadius(object.radius)
+        object.transform = Qt3DCore.QTransform()
+        object.transform.setRotation(object.rotation)
+        object.transform.setTranslation(QVector3D(object.translation[0],object.translation[1],object.translation[2]))
+            
+        # Material
+        object.material = Qt3DExtras.QPhongMaterial()
+        object.material.setAmbient(QColor(object.color[0], object.color[1], object.color[2]))
+        object.material.setDiffuse(0)
+        object.material.setShininess(1)
+        object.material.setSpecular(0)
+
+        #Linking
+        object.entity.addComponent(object.mesh)
+        object.entity.addComponent(object.transform)
+        object.entity.addComponent(object.material)
+
+    def addObject(self, object):
+        object.entity = Qt3DCore.QEntity(self.rootEntity)
+        if object.indicator == 0:
+            pass
+        elif object.indicator == 1: #cube
+            self.addObjectCube(object)
+        else:
+            self.addObjectSphere(object)
+
+#    def removeObject(self):
+      
+     
+
 
 #Layout which contains a widget acting as a container
 #for a Qt3DWindow, the render view
 class RenderPane (QVBoxLayout):
-    def __init__(self,objList = ObjectList(), text = None):
+    def __init__(self,objList = ObjectList()):
         super().__init__()
-        if text is not None:
-            self.addWidget(text)
-        self.view = Qt3DExtras.Qt3DWindow()
+        self.view = RenderWindow()
         self.container = QWidget.createWindowContainer(self.view)
+        self.addWidget(self.container)
+
+        
+
+
 
 class MainWindow (QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.listPane = ListPane()
         self.objList = ObjectList(self.listPane)
+        self.renderPane = RenderPane(self.objList)
         addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
 
         #self.layout = QtWidgets.QVBoxLayout(self)
@@ -393,9 +482,8 @@ class MainWindow (QtWidgets.QMainWindow):
         self.setCentralWidget(self.centralWidget)
         layout = QtWidgets.QVBoxLayout()
         self.centralWidget.setLayout(layout)
-        self.renderPane = RenderPane(self.objList, QtWidgets.QLabel("Render View", alignment=QtCore.Qt.AlignTop))
 
-        self.toplayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane) #return to this to return to add pane
+        self.toplayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane, self.renderPane) #return to this to return to add pane
         self.midlayout = self.listPane
         self.bottomlayout = self.renderPane
         self.centralWidget.layout().addLayout(self.toplayout,25)
