@@ -153,6 +153,41 @@ class Cube(Object3D):
             returnButton.clicked.connect(self.revertPane)
 
             #Add buttons
+            horizontalGroupBoxT = QGroupBox(("Translation"))
+            hlayoutT = QHBoxLayout();
+            hlayoutT.addWidget(self.translationFieldX)
+            hlayoutT.addWidget(self.translationFieldY)
+            hlayoutT.addWidget(self.translationFieldZ)
+            hlayoutT.addWidget(self.translationButton)
+            horizontalGroupBoxT.setLayout(hlayoutT)
+            self.actionPane.addWidget(horizontalGroupBoxT)
+            
+            horizontalGroupBoxR = QGroupBox(("Rotation"))
+            hlayoutR = QHBoxLayout();
+            hlayoutR.addWidget(self.rotationFieldX)
+            hlayoutR.addWidget(self.rotationFieldY)
+            hlayoutR.addWidget(self.rotationFieldZ)
+            hlayoutR.addWidget(self.rotationButton)
+            horizontalGroupBoxR.setLayout(hlayoutR)
+            self.actionPane.addWidget(horizontalGroupBoxR)
+            
+            horizontalGroupBoxC = QGroupBox(("Color"))
+            hlayoutC = QHBoxLayout();
+            hlayoutC.addWidget(self.colorFieldR)
+            hlayoutC.addWidget(self.colorFieldG)
+            hlayoutC.addWidget(self.colorFieldB)
+            hlayoutC.addWidget(self.colorButton)
+            horizontalGroupBoxC.setLayout(hlayoutC)
+            self.actionPane.addWidget(horizontalGroupBoxC)
+            
+            horizontalGroupBoxS = QGroupBox(("Scale"))
+            hlayoutS = QHBoxLayout();
+            hlayoutS.addWidget(self.scaleFieldX)
+            hlayoutS.addWidget(self.scaleFieldY)
+            hlayoutS.addWidget(self.scaleFieldZ)
+            hlayoutS.addWidget(self.scaleButton)
+            horizontalGroupBoxS.setLayout(hlayoutS)
+            self.actionPane.addWidget(horizontalGroupBoxS)
 
 
             self.actionPane.addWidget(returnButton)
