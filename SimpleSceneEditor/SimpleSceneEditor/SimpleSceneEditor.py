@@ -1,3 +1,4 @@
+from gettext import translation
 from pickle import OBJ
 import sys
 import random
@@ -38,10 +39,6 @@ class Object3D:
     def editprompt(self,list):
         #create edit plane
         pass
-    
-
-    def rename(self,list):
-        pass
 
     def updateTraslation(self):
         self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
@@ -65,37 +62,39 @@ class Cube(Object3D):
     def editprompt(self,list):
         #create cube edit plane
 
-        #Text fields: translation (x,y,z)
-        # rotation (x,y,z)
-        # color (r,g,b)
-        # scale (x,y,z)
-
         #Create Field Items
+
+        updateLambda = lambda:list.modifyObject(self)
+        def callUpdateLambda():
+            updateLambda()
         
         self.translationFieldX = QLineEdit(str(self.translation[0]))
         self.translationFieldY = QLineEdit(str(self.translation[1]))
         self.translationFieldZ = QLineEdit(str(self.translation[2]))
         self.translationButton = QPushButton("Update Translation")
         self.translationButton.clicked.connect(self.updateTraslation)
+        self.translationButton.clicked.connect(callUpdateLambda)
         
         self.rotationFieldX = QLineEdit(str(self.rotation[0]))
         self.rotationFieldY = QLineEdit(str(self.rotation[1]))
         self.rotationFieldZ = QLineEdit(str(self.rotation[2]))
         self.rotationButton = QPushButton("Update Rotation")
-        self.translationButton.clicked.connect(self.updateRotation)
+        self.rotationButton.clicked.connect(self.updateRotation)
+        self.rotationButton.clicked.connect(callUpdateLambda)
         
         self.colorFieldR = QLineEdit(str(self.color[0]))
         self.colorFieldG = QLineEdit(str(self.color[1]))
         self.colorFieldB = QLineEdit(str(self.color[2]))
         self.colorButton = QPushButton("Update Color")
-        self.translationButton.clicked.connect(self.updateColor)
+        self.colorButton.clicked.connect(self.updateColor)
+        self.colorButton.clicked.connect(callUpdateLambda)
         
         self.scaleFieldX = QLineEdit(str(self.scale[0]))
         self.scaleFieldY = QLineEdit(str(self.scale[1]))
         self.scaleFieldZ = QLineEdit(str(self.scale[2]))
         self.scaleButton = QPushButton("Update Scale")
-        self.translationButton.clicked.connect(self.updateScale)
-
+        self.scaleButton.clicked.connect(self.updateScale)
+        self.scaleButton.clicked.connect(callUpdateLambda)
 
 
 class Sphere(Object3D):
@@ -139,34 +138,53 @@ class ObjectList():
 
     def update(self):
         pass
+    
+class ActionPaneAdd(QVBoxLayout):
+    
+    def addCubeCall(self):
+        cube = Cube()
+        self.objList.addObject(cube)
+        self.objList.update()
 
-class MyWidget (QtWidgets.QWidget):
+    def addSphereCall(self):
+        sphere = Sphere()
+        self.objList.addObject(sphere)
+        self.objList.update()
+
+    def __init__(self,objList = ObjectList()):
+        self.objList = objList
+        self.addCubeButton = QPushButton("Cube")
+        self.addSphereButton = QPushButton("Sphere")
+        self.addCubeButton.clicked.connnect(self.addCubeCall)
+        self.addSphereButton.clicked.connnect(self.addSphereButton)
+        self.addWidget(self.addCubeButton)
+        self.addWidget(self.addSphereButton)
+        self.setContentsMargins(1,1,1,1) 
+
+class MainWindow (QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
+        self.addBackup = ActionPaneAdd(self, list) #return to this to return to add pane
+        self.actionPane = self.addBackup #default action is adding objects
+        self.listPane = ListPane(self)
 
-        self.hello = ["Hello World", "Konnichiha Sekai", "Ohayou Tokyo", "G'day Mate"]
-
-        self.button = QtWidgets.QPushButton("Click here")
-        
-        self.text = QtWidgets.QLabel("Hello World",
-                                     alignment=QtCore.Qt.AlignCenter)
-
-        
+        self.list = ObjectList()
 
         self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.text)
-        self.layout.addWidget(self.button)
+        llayout = self.actionPane
+        rlayout = QVBoxLayout()
+        rlayout.setContentsMargins(1,1,1,1)
+        rlayout.addWidget(self.listPane)
+        self.layout.addLayout(llayout,50)
+        self.layout.addLayout(rlayout,50)
         
-        self.button.clicked.connect(self.magic)
 
-    @QtCore.Slot()
-    def magic(self):
-        self.text.setText(random.choice(self.hello))
+    
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
-    widget = MyWidget()
+    widget = MainWindow()
     widget.resize(800,600)
     widget.show()
 
