@@ -7,10 +7,46 @@ from PySide6.QtCore import Slot
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
 
+        
+class ObjectList():
 
+    def __init__(self, listPane = None):
+        self.objectDict = {}
+        self.cubeNum = 0
+        self.sphereNum = 0
+        self.listPane = listPane
+    
+    def addObject(self, object):
+        if object.indicator == 0:
+            pass
+        elif object.indicator == 1: #cube
+            newName = "cube" + str(self.cubeNum)
+            self.cubeNum += 1
+            object.name = newName
+            self.objectDict[object.name] = object
+        else:
+            newName = "sphere" + str(self.sphereNum)
+            self.sphereNum += 1
+            object.name = newName
+            self.objectDict[object.name] = object
+
+    def deleteObject(self, object):
+        if object.indicator == 0:
+            pass
+        del self.objectDict[object.name]
+
+
+    def modifyObject(self, object):
+        if object.indicator == 0:
+            pass
+        self.objectDict[object.name]
+
+    def update(self):
+        if(self.listPane is not None):
+            self.listPane.updateListPane(self.objectDict)
 
 class Object3D:
-    def __init__(self):
+    def __init__(self, objList = ObjectList()):
         self.name = ""
         self.color = [122,122,122] #All objects default to gray
         self.translation = [0.0,0.0,0.0]
@@ -33,12 +69,14 @@ class Object3D:
         self.colorFieldB = QLineEdit(str(self.color[2]))
         self.colorButton = QPushButton("Update Color")
 
-    def delete(self, list):
+        self.objList = objList
+
+    def delete(self):
         #Take list, remove object from list
-        list.deleteObject(self)
-        list.update()
+        self.objList.deleteObject(self)
+        self.objList.update()
         
-    def editprompt(self,list):
+    def editprompt(self):
         #create edit plane
         pass
 
@@ -54,8 +92,8 @@ class Object3D:
         self.color = [int(self.colorFieldR.text()),int(self.colorFieldG.text()),int(self.colorFieldB.text())]
 
 class Cube(Object3D):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, objList = ObjectList()):
+        super().__init__(objList)
         self.scale = [1.0,1.0,1.0]
         self.indicator = 1 #1 = cube
         self.name = "cube" #will be changed in add to dict
@@ -103,8 +141,8 @@ class Cube(Object3D):
 
 class Sphere(Object3D):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, objList = ObjectList()):
+        super().__init__(objList)
         self.radius = 1.0
         self.indicator = 2 #2 = sphere
         self.name = "sphere" #will be changed in add to dict
@@ -135,6 +173,7 @@ class ListPane(QVBoxLayout):
             obj = updatedListDic[objKey]
             objName = obj.name
             objDelete = QPushButton("Delete")
+            objDelete.clicked.connect(obj.delete)
             objEdit = QPushButton("Edit")
             #Create obj delete button
             #Create obj edit button
@@ -145,48 +184,13 @@ class ListPane(QVBoxLayout):
             self.table.setIndexWidget(self.table.model().index(objCounter, 2), objEdit)
             objCounter += 1
         self.addWidget(self.table)
-        
-class ObjectList():
-
-    def __init__(self, listPane = None):
-        self.objectDict = {}
-        self.cubeNum = 0
-        self.sphereNum = 0
-        self.listPane = listPane
-    
-    def addObject(self, object):
-        if object.indicator == 0:
-            pass
-        elif object.indicator == 1: #cube
-            newName = "cube" + str(self.cubeNum)
-            self.cubeNum += 1
-            object.name = newName
-            self.objectDict[object.name] = object
-        else:
-            newName = "sphere" + str(self.sphereNum)
-            self.sphereNum += 1
-            object.name = newName
-            self.objectDict[object.name] = object
-
-    def deleteObject(self, object):
-        if object.indicator == 0:
-            pass
-        del self.objectDict[object.name]
-
-
-    def modifyObject(self, object):
-        if object.indicator == 0:
-            pass
-        self.objectDict[object.name]
-
-    def update(self):
-        if(self.listPane is not None):
-            self.listPane.updateListPane(self.objectDict)
 
 class ActionPaneAdd(QVBoxLayout):
 
-    def __init__(self,objList = ObjectList()):
+    def __init__(self,objList = ObjectList(), text = None):
         super().__init__()
+        if text is not None:
+            self.addWidget(text)
         self.objList = objList
         self.addCubeButton = QPushButton("Cube")
         self.addSphereButton = QPushButton("Sphere")
@@ -194,15 +198,14 @@ class ActionPaneAdd(QVBoxLayout):
         self.addSphereButton.clicked.connect(self.addSphereCall)
         self.addWidget(self.addCubeButton)
         self.addWidget(self.addSphereButton)
-        self.setContentsMargins(1,1,1,1) 
     
     def addCubeCall(self):
-        cube = Cube()
+        cube = Cube(self.objList)
         self.objList.addObject(cube)
         self.objList.update()
 
     def addSphereCall(self):
-        sphere = Sphere()
+        sphere = Sphere(self.objList)
         self.objList.addObject(sphere)
         self.objList.update()
 
@@ -211,15 +214,17 @@ class MainWindow (QtWidgets.QWidget):
         super().__init__()
         self.listPane = ListPane()
         self.objList = ObjectList(self.listPane)
-        self.addBackup = ActionPaneAdd(self.objList) #return to this to return to add pane
+        addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
+        self.addBackup = ActionPaneAdd(self.objList, addBackupText) #return to this to return to add pane
+
         self.actionPane = self.addBackup #default action is adding objects
 
 
         self.layout = QtWidgets.QVBoxLayout(self)
         llayout = self.actionPane
         rlayout = self.listPane
-        self.layout.addLayout(llayout,50)
-        self.layout.addLayout(rlayout,50)
+        self.layout.addLayout(llayout,25)
+        self.layout.addLayout(rlayout,75)
         
 
     
