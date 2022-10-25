@@ -94,13 +94,18 @@ class Object3D:
         #create edit plane
         pass
 
+    def updateRender(self):
+        #Update mesh, transform etc.
+        pass
+
     def updateTraslation(self):
         self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
+        self.updateRender()
 
     #Construct quaternion from inputted rotation
     def updateRotation(self):
         self.rotation = QQuaternion.fromEulerAngles(QVector3D(float(self.rotationFieldX.text()),float(self.rotationFieldY.text()),float(self.rotationFieldZ.text())))
-        
+        self.updateRender()
     
     def updateColor(self):
         self.color = [int(self.colorFieldR.text()),int(self.colorFieldG.text()),int(self.colorFieldB.text())]
@@ -109,6 +114,7 @@ class Object3D:
                 self.color[i] = 0
             elif self.color[i] > 255:
                 self.color[i] = 255
+        self.updateRender()
 
 class Cube(Object3D):
     def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None, renderWindow = None):
@@ -118,8 +124,24 @@ class Cube(Object3D):
         self.name = "cube" #will be changed in add to dict
         self.actionPane = QVBoxLayout()
 
+        
+    def updateRender(self):
+        #Update mesh, transform etc.
+        self.transform = Qt3DCore.QTransform()
+        self.transform.setScale3D(QVector3D(self.scale[0],self.scale[1],self.scale[2]))
+        self.transform.setRotation(self.rotation)
+        self.transform.setTranslation(QVector3D(self.translation[0],self.translation[1],self.translation[2]))
+            
+        # Material
+        self.material = Qt3DExtras.QPhongMaterial()
+        self.material.setAmbient(QColor(self.color[0], self.color[1], self.color[2]))
+        self.material.setDiffuse(0)
+        self.material.setShininess(1)
+        self.material.setSpecular(0)
+
     def updateScale(self):
         self.scale = [float(self.scaleFieldX.text()),float(self.scaleFieldY.text()),float(self.scaleFieldZ.text())]
+        self.updateRender()
         
     def editprompt(self):
         #create cube edit plane
@@ -219,10 +241,24 @@ class Sphere(Object3D):
         self.indicator = 2 #2 = sphere
         self.name = "sphere" #will be changed in add to dict
 
+    def updateRender(self):
+        self.mesh.setRadius(self.radius)
+        self.transform = Qt3DCore.QTransform()
+        self.transform.setRotation(self.rotation)
+        self.transform.setTranslation(QVector3D(self.translation[0],self.translation[1],self.translation[2]))
+            
+        # Material
+        self.material = Qt3DExtras.QPhongMaterial()
+        self.material.setAmbient(QColor(self.color[0], self.color[1], self.color[2]))
+        self.material.setDiffuse(0)
+        self.material.setShininess(1)
+        self.material.setSpecular(0)
+
     def updateRadius(self):
         self.radius = float(self.radiusField.text())
         if self.radius <= 0.0:
             self.radius = 0.000000001
+        self.updateRender()
            
 
 
