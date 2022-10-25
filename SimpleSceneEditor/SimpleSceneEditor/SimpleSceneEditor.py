@@ -3,6 +3,7 @@ import sys
 import random
 from PySide6 import QtCore, QtWidgets, QtGui
 from PySide6.QtCore import Slot
+from PySide6.QtWidgets import *
 
 
 
@@ -27,12 +28,57 @@ class Object3D:
         list.modifyObject(self)
         list.update()
 
+    def rename(self,list):
+        pass
+
+    def updateTraslation(self, newTranslation):
+        self.translation = newTranslation
+
+    def updateRotation(self, newRotation):
+        self.rotation = newRotation
+    
+    def updateColor(self, newColor):
+        self.color = newColor
+
 class Cube(Object3D):
     def __init__(self):
         super().__init__()
         self.scale = [1.0,1.0,1.0]
         self.indicator = 1 #1 = cube
         self.name = "cube" #will be changed in add to dict
+
+    def updateScale(self, newScale):
+        self.scale = newScale
+        
+    def editprompt(self,list):
+        #create cube edit plane
+
+        #Text fields: translation (x,y,z)
+        # rotation (x,y,z)
+        # color (r,g,b)
+        # scale (x,y,z)
+
+        #Create Field Items
+        
+        self.translationFieldX = QLineEdit(str(self.translation[0]))
+        self.translationFieldY = QLineEdit(str(self.translation[1]))
+        self.translationFieldZ = QLineEdit(str(self.translation[2]))
+        self.translationButton = QPushButton("Update Translation")
+        
+        self.rotationFieldX = QLineEdit(str(self.rotation[0]))
+        self.rotationFieldY = QLineEdit(str(self.rotation[1]))
+        self.rotationFieldZ = QLineEdit(str(self.rotation[2]))
+        self.rotationButton = QPushButton("Update Rotation")
+        
+        self.colorFieldR = QLineEdit(str(self.color[0]))
+        self.colorFieldG = QLineEdit(str(self.color[1]))
+        self.colorFieldB = QLineEdit(str(self.color[2]))
+        self.colorButton = QPushButton("Update Color")
+        
+        self.scaleFieldX = QLineEdit(str(self.scale[0]))
+        self.scaleFieldY = QLineEdit(str(self.scale[1]))
+        self.scaleFieldZ = QLineEdit(str(self.scale[2]))
+        self.scaleButton = QPushButton("Update Scale")
 
 class Sphere(Object3D):
     
