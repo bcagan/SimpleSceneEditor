@@ -131,7 +131,7 @@ class Object3D:
     #Construct quaternion from inputted rotation
     def updateRotation(self):
         self.rotation = QQuaternion.fromEulerAngles(QVector3D(float(self.rotationFieldX.text()),float(self.rotationFieldY.text()),float(self.rotationFieldZ.text())))
-        #self.updateRender()
+        self.updateRender()
         self.objList.loadDict[self.name]['rotation'] = self.rotation.toEulerAngles()
         self.objList.modifyObject(self)
     
@@ -142,7 +142,7 @@ class Object3D:
                 self.color[i] = 0
             elif self.color[i] > 255:
                 self.color[i] = 255
-        #self.updateRender()
+        self.updateRender()
         self.objList.loadDict[self.name]['color'] = self.color
         self.objList.modifyObject(self)
         
@@ -256,18 +256,6 @@ class Sphere(Object3D):
         self.radius = 1.0
         self.indicator = 2 #2 = sphere
         self.name = "sphere" #will be changed in add to dict
-
-    def updateRender(self):
-        print("hello")
-        self.mesh.setRadius(self.radius)
-        self.transform = Qt3DCore.QTransform()
-        self.transform.setRotation(self.rotation)
-        self.transform.setTranslation(QVector3D(self.translation[0],self.translation[1],self.translation[2]))
-            
-        # Material
-        self.material = Qt3DExtras.QPhongMaterial()
-        self.material.setAmbient(QColor(self.color[0], self.color[1], self.color[2]))
-        print("Fail")
 
 
 
@@ -388,8 +376,7 @@ class ListPane(QVBoxLayout):
             objDelete.clicked.connect(obj.delete)
             objEdit = QPushButton("Edit")
             objEdit.clicked.connect(obj.editprompt)
-            #Create obj delete button
-            #Create obj edit button
+
             self.table.setItem(objCounter, 0, QTableWidgetItem(objName))
             self.table.setItem(objCounter, 1, QTableWidgetItem())
             self.table.setIndexWidget(self.table.model().index(objCounter, 1), objDelete)
