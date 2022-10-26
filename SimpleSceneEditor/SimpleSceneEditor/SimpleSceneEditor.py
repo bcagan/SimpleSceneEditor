@@ -34,6 +34,9 @@ class ObjectList():
         with open('obj_save.pkl', 'wb') as f:
             pickle.dump(self.loadDict,f)
             f.close()
+        with open('num_save.pkl', 'wb') as f:
+            pickle.dump({'cubeNum' : self.cubeNum, 'sphereNum' : self.sphereNum},f)
+            f.close()
     
     def addObject(self, object):
         if object.indicator == 0:
@@ -599,8 +602,17 @@ class MainWindow (QtWidgets.QMainWindow):
                     maxSphere += 1
             maxCube += 1
             maxSphere += 1
-            self.objList.cubeNum = maxCube
-            self.objList.sphereNum = maxSphere
+            try:
+                f2 = open('num_save.pkl', 'rb')
+            except:
+                print("Failed to load previous object numbers, creating estimate")
+                self.objList.cubeNum = maxCube
+                self.objList.sphereNum = maxSphere
+            else:
+                numDic = pickle.load(f2)
+                self.objList.cubeNum = numDic['cubeNum']
+                self.objList.sphereNum = numDic['sphereNum']
+                f2.close()
             f.close()
             
             self.objList.update()
