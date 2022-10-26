@@ -107,9 +107,12 @@ class Object3D:
 
     def delete(self):
         #Take list, remove object from list
-        self.renderWindow.view.removeObject(self.entity)
-        self.objList.deleteObject(self)
-        self.objList.update()
+        if len(self.objList.objectDict) <= 1:
+            print("Cannot delete object from render view. Please reload scene")
+        else:
+            self.renderWindow.view.removeObject(self.entity)
+            self.objList.deleteObject(self)
+            self.objList.update()
         
     def editprompt(self):
         #create edit plane
@@ -120,7 +123,6 @@ class Object3D:
         self.renderWindow.view.removeObject(self.entity)
         self.renderWindow.view.addObject(self)
         self.objList.update()
-        pass
 
     def updateTraslation(self):
         self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
@@ -170,6 +172,10 @@ class Cube(Object3D):
         #create cube edit plane
 
         #Create Field Items
+        
+        if len(self.objList.objectDict) <= 1:
+            print("Cannot edit object when there are no other objects. Please add an object to continue.")
+            pass
         
         self.translationFieldX = QLineEdit(str(self.translation[0]))
         self.translationFieldY = QLineEdit(str(self.translation[1]))
@@ -246,7 +252,8 @@ class Cube(Object3D):
             self.actionPane.addWidget(returnButton)
 
             #Set pane
-            self.swapActionPane(self.actionPane)
+            if len(self.objList.objectDict) > 1:
+                self.swapActionPane(self.actionPane)
 
 
 class Sphere(Object3D):
@@ -274,6 +281,10 @@ class Sphere(Object3D):
         #create sphere edit plane
 
         #Create Field Items
+        print(len(self.objList.objectDict))
+        if len(self.objList.objectDict) <= 1:
+            print("Cannot edit object when there are no other objects. Please add an object to continue.")
+            pass
         
         self.translationFieldX = QLineEdit(str(self.translation[0]))
         self.translationFieldY = QLineEdit(str(self.translation[1]))
@@ -463,7 +474,6 @@ class RenderWindow(Qt3DExtras.Qt3DWindow):
             
         # Material
         object.material = Qt3DExtras.QPhongMaterial()
-        print(object.color)
         object.material.setAmbient(QColor(object.color[0], object.color[1], object.color[2]))
 
         #Linking
@@ -479,18 +489,13 @@ class RenderWindow(Qt3DExtras.Qt3DWindow):
             self.addObjectCube(object)
         else:
             self.addObjectSphere(object)
-
-
-    def removeRecursive(self, objectID, currentNode : Qt3DCore.QNode):
-        if currentNode is not None:
-            if currentNode.id() == objectID:
-                currentNode.deleteLater()
-                pass
-            for node in currentNode.childNodes():
-                self.removeRecursive(objectID, node)
+            
 
     def removeObject(self, object : Qt3DCore.QEntity):
-        self.removeRecursive(object.id(),self.rootEntity)
+        #Properly deleting seems to be a terrible pain, and my previous
+        #revursive attempt led to the id being written over, leading to crashes
+        #when loaded again, object will not be recreated
+        object.setEnabled(False)
 
      
 
