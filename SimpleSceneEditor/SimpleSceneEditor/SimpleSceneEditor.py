@@ -119,17 +119,21 @@ class Object3D:
         #sadly we have to delete the object and then add it again
         self.renderWindow.view.removeObject(self.entity)
         self.renderWindow.view.addObject(self)
+        self.objList.update()
+        pass
 
     def updateTraslation(self):
         self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
         self.updateRender()
         self.objList.loadDict[self.name]['translation'] = self.translation
+        self.objList.modifyObject(self)
 
     #Construct quaternion from inputted rotation
     def updateRotation(self):
         self.rotation = QQuaternion.fromEulerAngles(QVector3D(float(self.rotationFieldX.text()),float(self.rotationFieldY.text()),float(self.rotationFieldZ.text())))
-        self.updateRender()
+        #self.updateRender()
         self.objList.loadDict[self.name]['rotation'] = self.rotation.toEulerAngles()
+        self.objList.modifyObject(self)
     
     def updateColor(self):
         self.color = [int(self.colorFieldR.text()),int(self.colorFieldG.text()),int(self.colorFieldB.text())]
@@ -138,8 +142,9 @@ class Object3D:
                 self.color[i] = 0
             elif self.color[i] > 255:
                 self.color[i] = 255
-        self.updateRender()
+        #self.updateRender()
         self.objList.loadDict[self.name]['color'] = self.color
+        self.objList.modifyObject(self)
         
 
 class Cube(Object3D):
@@ -159,21 +164,18 @@ class Cube(Object3D):
         self.scale = [float(self.scaleFieldX.text()),float(self.scaleFieldY.text()),float(self.scaleFieldZ.text())]
         self.updateRender()
         self.objList.loadDict[self.name]['scale'] = self.scale
+        self.objList.modifyObject(self)
         
     def editprompt(self):
         #create cube edit plane
 
         #Create Field Items
         
-        def callUpdateFunc():
-            self.objList.modifyObject(self)
-        
         self.translationFieldX = QLineEdit(str(self.translation[0]))
         self.translationFieldY = QLineEdit(str(self.translation[1]))
         self.translationFieldZ = QLineEdit(str(self.translation[2]))
         self.translationButton = QPushButton("Update Translation")
         self.translationButton.clicked.connect(self.updateTraslation)
-        self.translationButton.clicked.connect(callUpdateFunc)
         
         quaternionEuler = self.rotation.toEulerAngles()
         self.rotationFieldX = QLineEdit(str(quaternionEuler.x()))
@@ -181,21 +183,18 @@ class Cube(Object3D):
         self.rotationFieldZ = QLineEdit(str(quaternionEuler.z()))
         self.rotationButton = QPushButton("Update Rotation")
         self.rotationButton.clicked.connect(self.updateRotation)
-        self.rotationButton.clicked.connect(callUpdateFunc)
         
         self.colorFieldR = QLineEdit(str(self.color[0]))
         self.colorFieldG = QLineEdit(str(self.color[1]))
         self.colorFieldB = QLineEdit(str(self.color[2]))
         self.colorButton = QPushButton("Update Color")
         self.colorButton.clicked.connect(self.updateColor)
-        self.colorButton.clicked.connect(callUpdateFunc)
         
         self.scaleFieldX = QLineEdit(str(self.scale[0]))
         self.scaleFieldY = QLineEdit(str(self.scale[1]))
         self.scaleFieldZ = QLineEdit(str(self.scale[2]))
         self.scaleButton = QPushButton("Update Scale")
         self.scaleButton.clicked.connect(self.updateScale)
-        self.scaleButton.clicked.connect(callUpdateFunc)
 
         #Create action pane
         self.actionPane = QVBoxLayout()
@@ -259,6 +258,7 @@ class Sphere(Object3D):
         self.name = "sphere" #will be changed in add to dict
 
     def updateRender(self):
+        print("hello")
         self.mesh.setRadius(self.radius)
         self.transform = Qt3DCore.QTransform()
         self.transform.setRotation(self.rotation)
@@ -267,9 +267,7 @@ class Sphere(Object3D):
         # Material
         self.material = Qt3DExtras.QPhongMaterial()
         self.material.setAmbient(QColor(self.color[0], self.color[1], self.color[2]))
-        self.material.setDiffuse(0)
-        self.material.setShininess(1)
-        self.material.setSpecular(0)
+        print("Fail")
 
 
 
@@ -279,6 +277,7 @@ class Sphere(Object3D):
             self.radius = 0.000000001
         self.updateRender()
         self.objList.loadDict[self.name]['scale'] = [self.radius,self.radius,self.radius]
+        self.objList.modifyObject(self)
            
 
 
@@ -288,15 +287,11 @@ class Sphere(Object3D):
 
         #Create Field Items
         
-        def callUpdateFunc():
-            self.objList.modifyObject(self)
-        
         self.translationFieldX = QLineEdit(str(self.translation[0]))
         self.translationFieldY = QLineEdit(str(self.translation[1]))
         self.translationFieldZ = QLineEdit(str(self.translation[2]))
         self.translationButton = QPushButton("Update Translation")
         self.translationButton.clicked.connect(self.updateTraslation)
-        self.translationButton.clicked.connect(callUpdateFunc)
         
         quaternionEuler = self.rotation.toEulerAngles()
         self.rotationFieldX = QLineEdit(str(quaternionEuler.x()))
@@ -304,19 +299,16 @@ class Sphere(Object3D):
         self.rotationFieldZ = QLineEdit(str(quaternionEuler.z()))
         self.rotationButton = QPushButton("Update Rotation")
         self.rotationButton.clicked.connect(self.updateRotation)
-        self.rotationButton.clicked.connect(callUpdateFunc)
         
         self.colorFieldR = QLineEdit(str(self.color[0]))
         self.colorFieldG = QLineEdit(str(self.color[1]))
         self.colorFieldB = QLineEdit(str(self.color[2]))
         self.colorButton = QPushButton("Update Color")
         self.colorButton.clicked.connect(self.updateColor)
-        self.colorButton.clicked.connect(callUpdateFunc)
         
         self.radiusField = QLineEdit(str(self.radius))
         self.radiusButton = QPushButton("Update Radius")
         self.radiusButton.clicked.connect(self.updateRadius)
-        self.radiusButton.clicked.connect(callUpdateFunc)
 
         #Create action pane
         self.actionPane = QVBoxLayout()
@@ -484,6 +476,7 @@ class RenderWindow(Qt3DExtras.Qt3DWindow):
             
         # Material
         object.material = Qt3DExtras.QPhongMaterial()
+        print(object.color)
         object.material.setAmbient(QColor(object.color[0], object.color[1], object.color[2]))
 
         #Linking
