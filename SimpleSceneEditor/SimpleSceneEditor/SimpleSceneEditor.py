@@ -19,7 +19,8 @@ import pickle
 
 #https://doc.qt.io/qtforpython/ Was used as documentation
 
-        
+#Contains a dictionairy of all objects, as well as a dictionary prepared for
+#saving the scene
 class ObjectList():
 
     def __init__(self, listPane = None):
@@ -29,6 +30,7 @@ class ObjectList():
         self.sphereNum = 0
         self.listPane = listPane
 
+    #Save the current scene and # of objects
     def save(self):
         
         with open('obj_save.pkl', 'wb') as f:
@@ -38,6 +40,7 @@ class ObjectList():
             pickle.dump({'cubeNum' : self.cubeNum, 'sphereNum' : self.sphereNum},f)
             f.close()
     
+    #Adds an object to the dictionary
     def addObject(self, object):
         if object.indicator == 0:
             pass
@@ -56,6 +59,7 @@ class ObjectList():
         
         self.save()
 
+    #Safely remove object from dictionaries
     def deleteObject(self, object):
         if object.indicator == 0:
             pass
@@ -63,25 +67,30 @@ class ObjectList():
         del self.loadDict[object.name]
         self.save()
 
-
+    #Update object name in dictionary
     def modifyObject(self, object):
         if object.indicator == 0:
             pass
         self.objectDict[object.name] = object
         self.save()
 
+    #Update display of dictionary
     def update(self):
         if(self.listPane is not None):
-            self.listPane.updateListPane(self.objectDict)
+            self.listPane.updateListPane(self.objectDict) 
 
+#A generic 3D object
 class Object3D:
     def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None, renderWindow = None):
+        #Generic attributed
         self.name = ""
         self.color = [122,122,122] #All objects default to gray
         self.translation = [0.0,0.0,0.0]
         self.rotation = QQuaternion()
         self.indicator = 0 #0 = not any object
-        
+
+
+        #Create UI Widgets
         self.translationFieldX = QLineEdit(str(self.translation[0]))
         self.translationFieldY = QLineEdit(str(self.translation[1]))
         self.translationFieldZ = QLineEdit(str(self.translation[2]))
@@ -98,16 +107,19 @@ class Object3D:
         self.colorFieldB = QLineEdit(str(self.color[2]))
         self.colorButton = QPushButton("Update Color")
 
+        #Set references
         self.objList = objList
         self.swapActionPane = swapActionPane
         self.revertPane = revertPane
         self.renderWindow = renderWindow
 
+        #Generic rendering attributes
         self.entity = None #mesh entity
         self.mesh = None #mesh
         self.transform = None #mesh transform
         self.material = None #mesh material
 
+    #Safely attempt to remove all references to current object
     def delete(self):
         #Take list, remove object from list
         if len(self.objList.objectDict) <= 1:
@@ -116,17 +128,15 @@ class Object3D:
             self.renderWindow.view.removeObject(self.entity)
             self.objList.deleteObject(self)
             self.objList.update()
-        
-    def editprompt(self):
-        #create edit plane
-        pass
 
+    #Modify object in renderer
     def updateRender(self):
         #sadly we have to delete the object and then add it again
         self.renderWindow.view.removeObject(self.entity)
         self.renderWindow.view.addObject(self)
         self.objList.update()
 
+    #Update attributes from user input
     def updateTraslation(self):
         self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
         self.updateRender()
@@ -160,22 +170,19 @@ class Cube(Object3D):
         self.name = "cube" #will be changed in add to dict
         self.actionPane = QVBoxLayout()
 
-        
-    
-
-        
-
+    #Cube exclusive attribute
     def updateScale(self):
         self.scale = [float(self.scaleFieldX.text()),float(self.scaleFieldY.text()),float(self.scaleFieldZ.text())]
         self.updateRender()
         self.objList.loadDict[self.name]['scale'] = self.scale
         self.objList.modifyObject(self)
         
+    #Create, and set, an action pane in order to edit this cube
     def editprompt(self):
         #create cube edit plane
 
         #Create Field Items
-        
+
         if len(self.objList.objectDict) <= 1:
             print("Cannot edit object when there are no other objects. Please add an object to continue.")
             pass
@@ -258,7 +265,7 @@ class Cube(Object3D):
             if len(self.objList.objectDict) > 1:
                 self.swapActionPane(self.actionPane)
 
-
+#Sphere 3D object
 class Sphere(Object3D):
     
     def __init__(self, objList = ObjectList(), swapActionPane = None, revertPane = None, renderWindow = None):
@@ -268,7 +275,7 @@ class Sphere(Object3D):
         self.name = "sphere" #will be changed in add to dict
 
 
-
+    #Radius is a sphere only attribute
     def updateRadius(self):
         self.radius = float(self.radiusField.text())
         if self.radius <= 0.0:
@@ -280,6 +287,7 @@ class Sphere(Object3D):
 
 
     #Shares a lot of code with cube, could be generalized
+    #Create, and set, an action pane in order to edit this sphere
     def editprompt(self):
         #create sphere edit plane
 
@@ -362,9 +370,11 @@ class Sphere(Object3D):
             self.swapActionPane(self.actionPane)
 
     
-
+#A pane that displays all objects in scene in a table, and allows objects to be
+#edited or deleted
 class ListPane(QVBoxLayout):
 
+    #Create table
     def __init__(self):
         super().__init__()
         self.text = QtWidgets.QLabel("List", alignment=QtCore.Qt.AlignTop)
@@ -374,15 +384,20 @@ class ListPane(QVBoxLayout):
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["Name", "Delete", "Edit"])
 
+    #Modify current pane to instead display an updated dictionary (ie, scene)
     def updateListPane(self, updatedListDic = {}):
+        #Remove and recreate table
         self.removeWidget(self.table)
         self.table.deleteLater()
         self.table = QTableWidget()
         self.table.setRowCount(len(updatedListDic))
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["Name", "Delete", "Edit"])
+
+        #Iterate through dictionary and fill in each corresponding table row
         objCounter = 0
         for objKey in updatedListDic:
+            #Create table attributes and buttons
             obj = updatedListDic[objKey]
             objName = obj.name
             objDelete = QPushButton("Delete")
@@ -398,12 +413,16 @@ class ListPane(QVBoxLayout):
             objCounter += 1
         self.addWidget(self.table)
 
+#Action pane to add objects to the scene
 class ActionPaneAdd(QVBoxLayout):
 
     def __init__(self,objList = ObjectList(), text = None, swapActionPane = None, revertPane = None, renderPane = None):
         super().__init__()
         if text is not None:
             self.addWidget(text)
+
+        #Pane consists of a reference to other panes, and buttons to add 
+        #Cube or sphere
         self.objList = objList
         self.addCubeButton = QPushButton("Cube")
         self.addSphereButton = QPushButton("Sphere")
@@ -415,13 +434,14 @@ class ActionPaneAdd(QVBoxLayout):
         self.revertPane = revertPane
         self.renderPane = renderPane
     
+    #Connected to add cube button
     def addCubeCall(self):
         cube = Cube(self.objList, self.swapActionPane, self.revertPane, self.renderPane)
         self.objList.addObject(cube)
         self.objList.update()
         self.renderPane.view.addObject(cube)
         
-
+    #Connected to add sphere button
     def addSphereCall(self):
         sphere = Sphere(self.objList, self.swapActionPane, self.revertPane, self.renderPane)
         self.objList.addObject(sphere)
@@ -562,19 +582,23 @@ class RenderPane (QVBoxLayout):
         
 
 
-
+#Window which houses all of the panes in the form of layouts
+#In addition, manages init of entire program, including init loading
 class MainWindow (QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        #Create panes (not action pane)
         self.listPane = ListPane()
         self.objList = ObjectList(self.listPane)
         self.renderPane = RenderPane(self.objList)
 
+        #Create central widget to hold layouts
         self.centralWidget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.centralWidget)
         layout = QtWidgets.QVBoxLayout()
         self.centralWidget.setLayout(layout)
         
+        #Create action pane
         addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
         self.toplayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane, self.renderPane) #return to this to return to add pane
         self.midlayout = self.listPane
@@ -583,7 +607,8 @@ class MainWindow (QtWidgets.QMainWindow):
         self.centralWidget.layout().addLayout(self.midlayout,25)
         self.centralWidget.layout().addLayout(self.bottomlayout,50)
         
-        #tempObjList = {}
+        #Attempt to load previous scene and object counts. Handle if no file
+        #exists
         try:
            f = open('obj_save.pkl', 'rb')
         except FileNotFoundError:
@@ -616,12 +641,9 @@ class MainWindow (QtWidgets.QMainWindow):
             f.close()
             
             self.objList.update()
- 
 
 
-        #self.layout = QtWidgets.QVBoxLayout(self)
-
-
+    #Swap current action pane with desired action pane (ie, add for edit)
     def swapActionPane(self, newPane):
         self.centralWidget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.centralWidget)
@@ -635,6 +657,7 @@ class MainWindow (QtWidgets.QMainWindow):
         self.centralWidget.layout().addLayout(self.midlayout,25)
         self.centralWidget.layout().addLayout(self.bottomlayout,50)
 
+    #Revert action pane back to a new instance of the add pane
     def revertPane(self):
         addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
         self.centralWidget = QtWidgets.QWidget(self)
@@ -650,6 +673,8 @@ class MainWindow (QtWidgets.QMainWindow):
         self.centralWidget.layout().addLayout(self.midlayout,25)
         self.centralWidget.layout().addLayout(self.bottomlayout,50)
 
+    #Parse the dictionary to convert from load form to 3D objects, and set
+    #as obj dictionary in load dict. Move load dict into objList
     def loadParse(self, loadDict):
         saveDict = {}
         
@@ -679,8 +704,7 @@ class MainWindow (QtWidgets.QMainWindow):
         return saveDict
         
 
-    
-
+#main
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
