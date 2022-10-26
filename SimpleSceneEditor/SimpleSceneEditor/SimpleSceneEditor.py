@@ -533,6 +533,20 @@ class MainWindow (QtWidgets.QMainWindow):
         super().__init__()
         self.listPane = ListPane()
         self.objList = ObjectList(self.listPane)
+        self.renderPane = RenderPane(self.objList)
+
+        self.centralWidget = QtWidgets.QWidget(self)
+        self.setCentralWidget(self.centralWidget)
+        layout = QtWidgets.QVBoxLayout()
+        self.centralWidget.setLayout(layout)
+        
+        addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
+        self.toplayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane, self.renderPane) #return to this to return to add pane
+        self.midlayout = self.listPane
+        self.bottomlayout = self.renderPane
+        self.centralWidget.layout().addLayout(self.toplayout,25)
+        self.centralWidget.layout().addLayout(self.midlayout,25)
+        self.centralWidget.layout().addLayout(self.bottomlayout,50)
         
         #tempObjList = {}
         try:
@@ -560,22 +574,8 @@ class MainWindow (QtWidgets.QMainWindow):
             self.objList.update()
  
 
-        self.renderPane = RenderPane(self.objList)
-        addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
 
         #self.layout = QtWidgets.QVBoxLayout(self)
-
-        self.centralWidget = QtWidgets.QWidget(self)
-        self.setCentralWidget(self.centralWidget)
-        layout = QtWidgets.QVBoxLayout()
-        self.centralWidget.setLayout(layout)
-
-        self.toplayout = ActionPaneAdd(self.objList, addBackupText, self.swapActionPane, self.revertPane, self.renderPane) #return to this to return to add pane
-        self.midlayout = self.listPane
-        self.bottomlayout = self.renderPane
-        self.centralWidget.layout().addLayout(self.toplayout,25)
-        self.centralWidget.layout().addLayout(self.midlayout,25)
-        self.centralWidget.layout().addLayout(self.bottomlayout,50)
 
 
     def swapActionPane(self, newPane):
@@ -608,26 +608,30 @@ class MainWindow (QtWidgets.QMainWindow):
 
     def loadParse(self, loadDict):
         saveDict = {}
+        
         for entryName in loadDict:
             entry = loadDict[entryName]
+            self.objList.loadDict[entryName] = entry
             if entry["indicator"] == 0:
                 pass
             elif entry["indicator"] == 1:#cube
-                newObject = Cube()
+                newObject = Cube(self.objList, self.swapActionPane, self.revertPane, self.renderPane)
                 newObject.name = entry["name"]
                 newObject.translation = entry["translation"]
                 newObject.rotation = QQuaternion.fromEulerAngles(entry["rotation"])
                 newObject.color = entry["color"]
                 newObject.scale = entry["scale"]
                 saveDict[newObject.name] = newObject
+                self.renderPane.view.addObject(newObject)
             else: #sphere
-                newObject = Sphere()
+                newObject = Sphere(self.objList, self.swapActionPane, self.revertPane, self.renderPane)
                 newObject.name = entry["name"]
                 newObject.translation = entry["translation"]
                 newObject.rotation = QQuaternion.fromEulerAngles(entry["rotation"])
                 newObject.color = entry["color"]
                 newObject.radius = entry["scale"][0]
                 saveDict[newObject.name] = newObject
+                self.renderPane.view.addObject(newObject)
         return saveDict
         
 
