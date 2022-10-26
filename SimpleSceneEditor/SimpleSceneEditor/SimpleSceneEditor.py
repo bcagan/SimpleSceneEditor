@@ -1,7 +1,6 @@
-from ast import Delete
+from ast import Delete, Try
 from gettext import translation
 from lib2to3.pytree import Node
-from pickle import OBJ
 import sys
 import random
 from tkinter import CURRENT
@@ -13,16 +12,28 @@ from PySide6.Qt3DCore import *
 from PySide6.Qt3DExtras import *
 from PySide6.Qt3DLogic import *
 from PySide6.Qt3DInput import *
+import numpy as np
+import pickle
+
+
 
 #https://doc.qt.io/qtforpython/ Was used as documentation
+
         
 class ObjectList():
 
     def __init__(self, listPane = None):
         self.objectDict = {}
+        self.loadDict = {} #name translate eulerrot color scale
         self.cubeNum = 0
         self.sphereNum = 0
         self.listPane = listPane
+
+    def save(self):
+        
+        with open('obj_save.pkl', 'wb') as f:
+            pickle.dump(self.loadDict,f)
+            f.close()
     
     def addObject(self, object):
         if object.indicator == 0:
@@ -32,22 +43,29 @@ class ObjectList():
             self.cubeNum += 1
             object.name = newName
             self.objectDict[object.name] = object
+            self.loadDict[object.name] = {"name" : object.name, "translation" : object.translation, "rotation" : object.rotation.toEulerAngles(), "color" : object.color, "scale" : object.scale, "indicator" : 1}
         else:
             newName = "sphere" + str(self.sphereNum)
             self.sphereNum += 1
             object.name = newName
             self.objectDict[object.name] = object
+            self.loadDict[object.name] = {"name" : object.name, "translation" : object.translation, "rotation" : object.rotation.toEulerAngles(), "color" : object.color, "scale" : [object.radius,object.radius,object.radius], "indicator" : 2}
+        
+        self.save()
 
     def deleteObject(self, object):
         if object.indicator == 0:
             pass
         del self.objectDict[object.name]
+        del self.loadDict[object.name]
+        self.save()
 
 
     def modifyObject(self, object):
         if object.indicator == 0:
             pass
-        self.objectDict[object.name]
+        self.objectDict[object.name] = object
+        self.save()
 
     def update(self):
         if(self.listPane is not None):
@@ -105,11 +123,13 @@ class Object3D:
     def updateTraslation(self):
         self.translation = [float(self.translationFieldX.text()),float(self.translationFieldY.text()),float(self.translationFieldZ.text())]
         self.updateRender()
+        self.objList.loadDict[self.name]['translation'] = self.translation
 
     #Construct quaternion from inputted rotation
     def updateRotation(self):
         self.rotation = QQuaternion.fromEulerAngles(QVector3D(float(self.rotationFieldX.text()),float(self.rotationFieldY.text()),float(self.rotationFieldZ.text())))
         self.updateRender()
+        self.objList.loadDict[self.name]['rotation'] = self.rotation.toEulerAngles()
     
     def updateColor(self):
         self.color = [int(self.colorFieldR.text()),int(self.colorFieldG.text()),int(self.colorFieldB.text())]
@@ -119,6 +139,7 @@ class Object3D:
             elif self.color[i] > 255:
                 self.color[i] = 255
         self.updateRender()
+        self.objList.loadDict[self.name]['color'] = self.color
         
 
 class Cube(Object3D):
@@ -137,6 +158,7 @@ class Cube(Object3D):
     def updateScale(self):
         self.scale = [float(self.scaleFieldX.text()),float(self.scaleFieldY.text()),float(self.scaleFieldZ.text())]
         self.updateRender()
+        self.objList.loadDict[self.name]['scale'] = self.scale
         
     def editprompt(self):
         #create cube edit plane
@@ -256,6 +278,7 @@ class Sphere(Object3D):
         if self.radius <= 0.0:
             self.radius = 0.000000001
         self.updateRender()
+        self.objList.loadDict[self.name]['scale'] = [self.radius,self.radius,self.radius]
            
 
 
@@ -510,6 +533,33 @@ class MainWindow (QtWidgets.QMainWindow):
         super().__init__()
         self.listPane = ListPane()
         self.objList = ObjectList(self.listPane)
+        
+        #tempObjList = {}
+        try:
+           f = open('obj_save.pkl', 'rb')
+        except FileNotFoundError:
+            print("Creating new dictionary")
+        else:
+            self.objList.objectDict = self.loadParse(pickle.load(f))
+            maxCube = 0
+            maxSphere = 0
+            for objName in self.objList.objectDict:
+                obj = self.objList.objectDict[objName]
+                if obj.indicator == 0:
+                    pass
+                elif obj.indicator == 1:
+                    maxCube += 1
+                else:
+                    maxSphere += 1
+            maxCube += 1
+            maxSphere += 1
+            self.objList.cubeNum = maxCube
+            self.objList.sphereNum = maxSphere
+            f.close()
+            
+            self.objList.update()
+ 
+
         self.renderPane = RenderPane(self.objList)
         addBackupText = QtWidgets.QLabel("Action: Add Object", alignment=QtCore.Qt.AlignTop)
 
@@ -555,6 +605,30 @@ class MainWindow (QtWidgets.QMainWindow):
         self.centralWidget.layout().addLayout(self.toplayout,25)
         self.centralWidget.layout().addLayout(self.midlayout,25)
         self.centralWidget.layout().addLayout(self.bottomlayout,50)
+
+    def loadParse(self, loadDict):
+        saveDict = {}
+        for entryName in loadDict:
+            entry = loadDict[entryName]
+            if entry["indicator"] == 0:
+                pass
+            elif entry["indicator"] == 1:#cube
+                newObject = Cube()
+                newObject.name = entry["name"]
+                newObject.translation = entry["translation"]
+                newObject.rotation = QQuaternion.fromEulerAngles(entry["rotation"])
+                newObject.color = entry["color"]
+                newObject.scale = entry["scale"]
+                saveDict[newObject.name] = newObject
+            else: #sphere
+                newObject = Sphere()
+                newObject.name = entry["name"]
+                newObject.translation = entry["translation"]
+                newObject.rotation = QQuaternion.fromEulerAngles(entry["rotation"])
+                newObject.color = entry["color"]
+                newObject.radius = entry["scale"][0]
+                saveDict[newObject.name] = newObject
+        return saveDict
         
 
     
