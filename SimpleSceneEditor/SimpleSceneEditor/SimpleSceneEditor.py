@@ -281,7 +281,6 @@ class Sphere(Object3D):
         #create sphere edit plane
 
         #Create Field Items
-        print(len(self.objList.objectDict))
         if len(self.objList.objectDict) <= 1:
             print("Cannot edit object when there are no other objects. Please add an object to continue.")
             pass
@@ -498,7 +497,53 @@ class RenderWindow(Qt3DExtras.Qt3DWindow):
         object.setEnabled(False)
 
      
+#Sourced from https://doc.qt.io/qtforpython/examples/example_3d__simple3d.html
+#Official QT docs have a very good movement system for the camera, which is an
+#orbit camera. Since its from the qt docs, and I wanted to make sure I had
+#everything else working, I used this
+class OrbitTransformController(QtCore.QObject):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self._target = None
+        self._matrix = QMatrix4x4()
+        self._radius = 1
+        self._angle = 0
 
+    def setTarget(self, t):
+        self._target = t
+
+    def getTarget(self):
+        return self._target
+
+    def setRadius(self, radius):
+        if self._radius != radius:
+            self._radius = radius
+            self.updateMatrix()
+            self.radiusChanged.emit()
+
+    def getRadius(self):
+        return self._radius
+
+    def setAngle(self, angle):
+        if self._angle != angle:
+            self._angle = angle
+            self.updateMatrix()
+            self.angleChanged.emit()
+
+    def getAngle(self):
+        return self._angle
+
+    def updateMatrix(self):
+        self._matrix.setToIdentity()
+        self._matrix.rotate(self._angle, QVector3D(0, 1, 0))
+        self._matrix.translate(self._radius, 0, 0)
+        if self._target is not None:
+            self._target.setMatrix(self._matrix)
+
+    angleChanged = QtCore.Signal()
+    radiusChanged = QtCore.Signal()
+    angle = QtCore.Property(float, getAngle, setAngle, notify=angleChanged)
+    radius = QtCore.Property(float, getRadius, setRadius, notify=radiusChanged)
 
 #Layout which contains a widget acting as a container
 #for a Qt3DWindow, the render view
@@ -508,6 +553,8 @@ class RenderPane (QVBoxLayout):
         self.view = RenderWindow()
         self.container = QWidget.createWindowContainer(self.view)
         self.addWidget(self.container)
+
+
 
         
 
